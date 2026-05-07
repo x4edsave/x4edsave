@@ -65,6 +65,7 @@ int main(int argc, char *argv[]) {
 	
 	uint32_t this_npc = 0;
 	uint32_t this_people = 0;
+	uint32_t npc_skill_up = 0;
 	
 	uint32_t skip_one_line = 0;
 	uint32_t skip_lines = 0;
@@ -306,6 +307,7 @@ int main(int argc, char *argv[]) {
 				this_xenon_ship = 0;
 				remove_tolerance_xenon = 0;
 				this_npc = 0;
+				npc_skill_up = 0;
 				this_people = 0;
 				in_ship_connection = 0;
 				in_ship_xl = 0;
@@ -325,7 +327,7 @@ int main(int argc, char *argv[]) {
 					if ( strstr(line, "drone_") == NULL ) {		//no DRONE
 					
 						count_total_ship++;
-					
+						
 						midx = index_until_match(line, "owner=\"player\"");
 						if ( midx ) {
 							
@@ -446,6 +448,8 @@ int main(int argc, char *argv[]) {
 				this_xenon_ship = 0;
 				in_ship_connection = 0;
 				in_station_connection = 0;
+				this_npc = 0;
+				npc_skill_up = 0;
 				
 				remove_groups_in_station = 0;
 				remove_shields_in_station = 0;
@@ -464,7 +468,7 @@ int main(int argc, char *argv[]) {
 				if (strstr(line, "state=\"wreck\"") == NULL ) { //no state="wreck"
 				
 					in_station_connection = 1;
-				
+					
 					if ( strstr(line, "owner=\"xenon\"") == NULL ) {	// remove_defence_in_station NOT XENON ONLY
 						
 						if(REMOVE_DEFENCE_IN_STATIONS) {
@@ -580,23 +584,33 @@ int main(int argc, char *argv[]) {
 
 				
 				// SKILLS
-				
-				if (!this_npc) {
-					if ( beginson(line, "<component class=\"npc\"")) {
-						
-						this_npc = 1;
-						
-					}
-				} else {
-					if ( beginson(line, "<skills ")) {
-						skip_one_line = 1;
-						
-						//printf(">changes :%ld >>> %s\n", lines_total, line);
-						
-						fprintf(output_file, "<skills boarding=\"15\" engineering=\"15\" management=\"15\" morale=\"15\" piloting=\"15\"/>\n");
-					}
-					if ( beginson(line, "</traits>")) {
-						this_npc = 0;
+				if (!npc_skill_up) {
+					if (!this_npc) {
+						if ( beginson(line, "<component class=\"npc\"")) {
+							
+							this_npc = 1;
+							
+						}
+					} else {
+						if ( beginson(line, "<traits flags=\"remotecommable\"/>")) {
+								this_npc = 0;
+								skip_one_line = 1;
+								fprintf(output_file, "<traits flags=\"remotecommable\">\n");
+								fprintf(output_file, "<skills boarding=\"15\" engineering=\"15\" management=\"15\" morale=\"15\" piloting=\"15\"/>\n");
+								fprintf(output_file, "</traits>\n");
+								npc_skill_up = 1;
+							}
+						if ( beginson(line, "<skills ")) {
+							skip_one_line = 1;
+							
+							//printf(">changes :%ld >>> %s\n", lines_total, line);
+							
+							fprintf(output_file, "<skills boarding=\"15\" engineering=\"15\" management=\"15\" morale=\"15\" piloting=\"15\"/>\n");
+						}
+						if ( beginson(line, "</traits>")) {
+							this_npc = 0;
+							npc_skill_up = 1;
+						}
 					}
 				}
 				
@@ -1001,6 +1015,45 @@ int main(int argc, char *argv[]) {
 
 
 			if ( in_station_connection ) {
+				
+				if ( this_player_station ) {
+					// SKILLS
+					/*
+					if ( beginson(line, "<skills ")) {
+							skip_one_line = 1;
+							fprintf(output_file, "<skills boarding=\"15\" engineering=\"15\" management=\"15\" morale=\"15\" piloting=\"15\"/>\n");
+						}
+					*/
+					if (!npc_skill_up) {
+						if (!this_npc) {
+							if ( beginson(line, "<component class=\"npc\"")) {
+								this_npc = 1;
+								
+							}
+						} else {
+							if ( beginson(line, "<traits flags=\"remotecommable\"/>")) {
+								this_npc = 0;
+								skip_one_line = 1;
+								fprintf(output_file, "<traits flags=\"remotecommable\">\n");
+								fprintf(output_file, "<skills boarding=\"15\" engineering=\"15\" management=\"15\" morale=\"15\" piloting=\"15\"/>\n");
+								fprintf(output_file, "</traits>\n");
+								npc_skill_up = 1;
+							}
+							if ( beginson(line, "<skills ")) {
+								skip_one_line = 1;
+								
+								//printf(">changes :%ld >>> %s\n", lines_total, line);
+								
+								fprintf(output_file, "<skills boarding=\"15\" engineering=\"15\" management=\"15\" morale=\"15\" piloting=\"15\"/>\n");
+							}
+							if ( beginson(line, "</traits>")) {
+								this_npc = 0;
+								npc_skill_up = 1;
+							}
+						}
+					}
+					
+				}
 
 				if(XENON_CARGOUP) {
 					if (xenon_add_resources) {
@@ -1218,6 +1271,7 @@ int main(int argc, char *argv[]) {
 						}
 					}
 					*/
+					/*
 					if ( beginson(line, "<component class=\"turret\"")) {
 						skip_lines = 1;
 						remove_turrets_in_ships = 1;
@@ -1251,7 +1305,7 @@ int main(int argc, char *argv[]) {
 							skip_lines = 0;
 						}
 					}
-					
+					*/
 					// ...
 					// <component class="engine" macro="engine_spl_m_combat_01_mk3_macro" connection="con_engine_01" id="[0xf112]">
 					// ...
